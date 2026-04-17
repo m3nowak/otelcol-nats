@@ -133,7 +133,7 @@ func (rcv *receiverComponent) scrapeAndConsume(ctx context.Context) {
 		return
 	}
 
-	opCtx := rcv.obsreport.StartMetricsOp(context.Background())
+	opCtx := rcv.obsreport.StartMetricsOp(ctx)
 	err = rcv.next.ConsumeMetrics(opCtx, metrics)
 	rcv.obsreport.EndMetricsOp(opCtx, "http", metrics.DataPointCount(), err)
 	if err != nil {
@@ -154,7 +154,7 @@ func (rcv *receiverComponent) scrape(ctx context.Context) (pmetric.Metrics, erro
 		endpointID := strings.TrimSpace(endpoint)
 		varzResp := map[string]any{}
 		if err := rcv.getJSON(ctx, endpointID, varzPath, &varzResp); err != nil {
-			scrapeErr = errorsJoin(scrapeErr, fmt.Errorf("scrape %s%s: %w", endpointID, varzPath, err))
+			scrapeErr = errors.Join(scrapeErr, fmt.Errorf("scrape %s%s: %w", endpointID, varzPath, err))
 			continue
 		}
 
@@ -462,16 +462,6 @@ func boolToFloat(value bool) float64 {
 		return 1
 	}
 	return 0
-}
-
-func errorsJoin(current error, next error) error {
-	if current == nil {
-		return next
-	}
-	if next == nil {
-		return current
-	}
-	return errors.Join(current, next)
 }
 
 type jszResponse struct {
