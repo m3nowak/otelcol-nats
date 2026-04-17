@@ -1,0 +1,51 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:14318
+
+  otlp_nats_jetstream:
+    endpoint: nats://127.0.0.1:4222
+    stream:
+      name: otlp
+    consumer:
+      durable: otlp-consumer
+
+exporters:
+  otlp_nats_jetstream:
+    endpoint: nats://127.0.0.1:4222
+
+  otlp_http/lgtm:
+    endpoint: http://127.0.0.1:4318
+
+service:
+  pipelines:
+    traces/to-nats:
+      receivers: [ otlp ]
+      processors: []
+      exporters: [ otlp_nats_jetstream ]
+
+    metrics/to-nats:
+      receivers: [ otlp ]
+      processors: []
+      exporters: [ otlp_nats_jetstream ]
+
+    logs/to-nats:
+      receivers: [ otlp ]
+      processors: []
+      exporters: [ otlp_nats_jetstream ]
+
+    traces/from-nats:
+      receivers: [ otlp_nats_jetstream ]
+      processors: []
+      exporters: [ otlp_http/lgtm ]
+
+    metrics/from-nats:
+      receivers: [ otlp_nats_jetstream ]
+      processors: []
+      exporters: [ otlp_http/lgtm ]
+
+    logs/from-nats:
+      receivers: [ otlp_nats_jetstream ]
+      processors: []
+      exporters: [ otlp_http/lgtm ]

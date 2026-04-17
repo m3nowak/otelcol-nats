@@ -1,0 +1,35 @@
+[tasks.setup-nats-js]
+wait_for = "start-compose"
+run = [
+    "nats stream add otlp --subjects 'otlp.*.*' --defaults",
+    "nats consumer add otlp otlp-consumer --defaults --pull",
+]
+
+[tasks.teardown-nats-js]
+run = [
+    "nats consumer delete otlp otlp-consumer -f",
+    "nats stream delete otlp -f",
+]
+
+[tasks.start-compose]
+run = ["docker compose -f compose.yaml up -d"]
+
+[tasks.stop-compose]
+wait_for = "teardown-nats-js"
+run = ["docker compose -f compose.yaml down"]
+
+[tasks.build]
+run = "builder --config ./builder-config-otelcol-otlp-nats.yaml"
+
+[tasks.serve]
+wait_for = "build"
+depends = ["start-compose", "setup-nats-js"]
+depends_post = ["teardown-nats-js", "stop-compose"]
+run = ["./otelcol-nats/otelcol-nats --config otelcol-cfg.yaml"]
+
+[tasks.gen-telemetry]
+run = [
+    "telemetrygen metrics --otlp-http --otlp-endpoint 127.0.0.1:14318 --otlp-insecure --duration 10s --rate 30",
+    "telemetrygen logs --otlp-http --otlp-endpoint 127.0.0.1:14318 --otlp-insecure --duration 10s --rate 30",
+    "telemetrygen traces --otlp-http --otlp-endpoint 127.0.0.1:14318 --otlp-insecure --duration 10s --rate 30",
+]
