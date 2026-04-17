@@ -91,16 +91,18 @@ func (rcv *receiverComponent) Shutdown(ctx context.Context) error {
 	}
 	cancel := rcv.cancel
 	done := rcv.done
-	rcv.cancel = nil
-	rcv.done = nil
-	rcv.client = nil
-	rcv.started = false
 	rcv.mu.Unlock()
 
 	cancel()
 
 	select {
 	case <-done:
+		rcv.mu.Lock()
+		rcv.cancel = nil
+		rcv.done = nil
+		rcv.client = nil
+		rcv.started = false
+		rcv.mu.Unlock()
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
