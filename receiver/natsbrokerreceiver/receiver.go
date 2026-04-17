@@ -413,7 +413,7 @@ func appendJszMetrics(builder *metricsBuilder, endpointID, serverName string, ti
 				builder.addGaugePoint("jetstream_consumer_delivered_stream_seq", "Latest sequence number of a stream", timestamp, float64(consumerInfo.Delivered.StreamSeq), consumerLabels)
 				builder.addGaugePoint("jetstream_consumer_num_ack_pending", "Number of pending acks from a consumer", timestamp, float64(consumerInfo.NumAckPending), consumerLabels)
 				builder.addGaugePoint("jetstream_consumer_num_redelivered", "Number of redelivered messages from a consumer", timestamp, float64(consumerInfo.NumRedelivered), consumerLabels)
-				builder.addGaugePoint("jetstream_consumer_num_waiting", "Number of inflight fetch requests from a pull consumer", timestamp, float64(consumerInfo.NumWaiting), consumerLabels)
+				builder.addGaugePoint("jetstream_consumer_num_waiting", "Number of in-flight fetch requests from a pull consumer", timestamp, float64(consumerInfo.NumWaiting), consumerLabels)
 				builder.addGaugePoint("jetstream_consumer_num_pending", "Number of pending messages from a consumer", timestamp, float64(consumerInfo.NumPending), consumerLabels)
 				builder.addGaugePoint("jetstream_consumer_ack_floor_stream_seq", "Number of ack floor stream seq from a consumer", timestamp, float64(consumerInfo.AckFloor.StreamSeq), consumerLabels)
 				builder.addGaugePoint("jetstream_consumer_ack_floor_consumer_seq", "Number of ack floor consumer seq from a consumer", timestamp, float64(consumerInfo.AckFloor.ConsumerSeq), consumerLabels)
