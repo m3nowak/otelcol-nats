@@ -90,7 +90,11 @@ func DecompressPayload(payload []byte, compression string) ([]byte, error) {
 		return readCompressedPayload(reader, err, string(normalizeCompression(configcompression.Type(compression))))
 	case configcompression.TypeSnappy:
 		if len(payload) >= len(snappyFramingHeader) && bytes.Equal(payload[:len(snappyFramingHeader)], snappyFramingHeader) {
-			return io.ReadAll(snappy.NewReader(bytes.NewReader(payload)))
+			decoded, err := io.ReadAll(snappy.NewReader(bytes.NewReader(payload)))
+			if err != nil {
+				return nil, fmt.Errorf("read snappy payload: %w", err)
+			}
+			return decoded, nil
 		}
 		decoded, err := snappy.Decode(nil, payload)
 		if err != nil {
@@ -98,9 +102,17 @@ func DecompressPayload(payload []byte, compression string) ([]byte, error) {
 		}
 		return decoded, nil
 	case configcompression.TypeSnappyFramed:
-		return io.ReadAll(snappy.NewReader(bytes.NewReader(payload)))
+		decoded, err := io.ReadAll(snappy.NewReader(bytes.NewReader(payload)))
+		if err != nil {
+			return nil, fmt.Errorf("read x-snappy-framed payload: %w", err)
+		}
+		return decoded, nil
 	case configcompression.TypeLz4:
-		return io.ReadAll(lz4.NewReader(bytes.NewReader(payload)))
+		decoded, err := io.ReadAll(lz4.NewReader(bytes.NewReader(payload)))
+		if err != nil {
+			return nil, fmt.Errorf("read lz4 payload: %w", err)
+		}
+		return decoded, nil
 	default:
 		return nil, fmt.Errorf("unsupported compression %q", compression)
 	}

@@ -51,3 +51,49 @@ func TestCompressionRoundTripMatchesCollectorTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestDecompressPayloadWrapsReadErrorsWithCompressionContext(t *testing.T) {
+	t.Parallel()
+
+	snappyFramedPayload := append(append([]byte(nil), snappyFramingHeader...), 0x01)
+	testCases := []struct {
+		name        string
+		payload     []byte
+		compression string
+		wantErr     string
+	}{
+		{
+			name:        "snappy detects framed payload",
+			payload:     snappyFramedPayload,
+			compression: "snappy",
+			wantErr:     "read snappy payload:",
+		},
+		{
+			name:        "x-snappy-framed",
+			payload:     snappyFramedPayload,
+			compression: "x-snappy-framed",
+			wantErr:     "read x-snappy-framed payload:",
+		},
+		{
+			name:        "lz4",
+			payload:     []byte{1, 2, 3, 4, 5},
+			compression: "lz4",
+			wantErr:     "read lz4 payload:",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := DecompressPayload(tc.payload, tc.compression)
+			if err == nil {
+				t.Fatal("expected decompression error")
+			}
+			if got := err.Error(); len(got) < len(tc.wantErr) || got[:len(tc.wantErr)] != tc.wantErr {
+				t.Fatalf("expected error prefix %q, got %q", tc.wantErr, got)
+			}
+		})
+	}
+}
