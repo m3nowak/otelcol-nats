@@ -12,6 +12,9 @@ exporters:
 
 receivers:
   - gomod: github.com/m3nowak/otelcol-nats v0.0.0
+    import: github.com/m3nowak/otelcol-nats/receiver/natsbrokerreceiver
+    path: .
+  - gomod: github.com/m3nowak/otelcol-nats v0.0.0
     import: github.com/m3nowak/otelcol-nats/receiver/otlpnatsjetstreamreceiver
     path: .
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.150.0
