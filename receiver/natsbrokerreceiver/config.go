@@ -100,6 +100,9 @@ func (cfg *Config) Validate() error {
 		if !slices.Contains(supportedMonitoringSchemes, parsed.Scheme) {
 			return fmt.Errorf("unsupported endpoint scheme %q", parsed.Scheme)
 		}
+		if parsed.Host == "" {
+			return fmt.Errorf("invalid endpoint %q: host must not be empty", endpoint)
+		}
 	}
 	if cfg.CollectionInterval <= 0 {
 		return errors.New(`"collection_interval" must be greater than zero`)
