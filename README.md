@@ -80,7 +80,7 @@ docker run --rm \
 
 ## Releases
 
-Pushing a Git tag triggers the release workflow in GitHub Actions. The workflow builds native `linux/amd64` and `linux/arm64` binaries on separate runners, attaches both binaries and a `SHA256SUMS` file to the GitHub Release, and publishes the multi-platform container image to `ghcr.io/m3nowak/otelcol-nats`.
+Publishing a GitHub Release triggers the release workflow in GitHub Actions. The release can create the tag in the GitHub UI, and the workflow then builds native `linux/amd64` and `linux/arm64` binaries, attaches both binaries and a `SHA256SUMS` file to that existing release, and publishes the multi-platform container image to `ghcr.io/m3nowak/otelcol-nats`.
 
 ## Current limitations
 
