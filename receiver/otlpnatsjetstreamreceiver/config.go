@@ -7,7 +7,6 @@ import (
 
 	"github.com/m3nowak/otelcol-nats/internal/natsjetstream"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -53,30 +52,33 @@ func createDefaultConfig() component.Config {
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf.IsSet("compression") {
+		return errors.New(`receiver does not support "compression"; payload decoding is derived from Content-Encoding`)
+	}
+	if conf.IsSet("compression_params") {
+		return errors.New(`receiver does not support "compression_params"; payload decoding is derived from Content-Encoding`)
+	}
+
 	type rawConfig struct {
-		Endpoint          any                                 `mapstructure:"endpoint"`
-		TLS               configtls.ClientConfig              `mapstructure:"tls"`
-		Compression       configcompression.Type              `mapstructure:"compression"`
-		CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
-		ProxyURL          string                              `mapstructure:"proxy_url"`
-		InboxPrefix       string                              `mapstructure:"inbox_prefix"`
-		Auth              natsjetstream.AuthConfig            `mapstructure:"auth"`
-		Stream            StreamConfig                        `mapstructure:"stream"`
-		Consumer          ConsumerConfig                      `mapstructure:"consumer"`
-		Timeout           time.Duration                       `mapstructure:"timeout"`
+		Endpoint    any                      `mapstructure:"endpoint"`
+		TLS         configtls.ClientConfig   `mapstructure:"tls"`
+		ProxyURL    string                   `mapstructure:"proxy_url"`
+		InboxPrefix string                   `mapstructure:"inbox_prefix"`
+		Auth        natsjetstream.AuthConfig `mapstructure:"auth"`
+		Stream      StreamConfig             `mapstructure:"stream"`
+		Consumer    ConsumerConfig           `mapstructure:"consumer"`
+		Timeout     time.Duration            `mapstructure:"timeout"`
 	}
 
 	raw := rawConfig{
-		Endpoint:          append([]string(nil), cfg.Endpoints...),
-		TLS:               cfg.TLS,
-		Compression:       cfg.Compression,
-		CompressionParams: cfg.CompressionParams,
-		ProxyURL:          cfg.ProxyURL,
-		InboxPrefix:       cfg.InboxPrefix,
-		Auth:              cfg.Auth,
-		Stream:            cfg.Stream,
-		Consumer:          cfg.Consumer,
-		Timeout:           cfg.Timeout,
+		Endpoint:    append([]string(nil), cfg.Endpoints...),
+		TLS:         cfg.TLS,
+		ProxyURL:    cfg.ProxyURL,
+		InboxPrefix: cfg.InboxPrefix,
+		Auth:        cfg.Auth,
+		Stream:      cfg.Stream,
+		Consumer:    cfg.Consumer,
+		Timeout:     cfg.Timeout,
 	}
 
 	if err := conf.Unmarshal(&raw); err != nil {
@@ -93,8 +95,6 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 	cfg.Endpoints = endpoints
 	cfg.TLS = raw.TLS
-	cfg.Compression = raw.Compression
-	cfg.CompressionParams = raw.CompressionParams
 	cfg.ProxyURL = raw.ProxyURL
 	cfg.InboxPrefix = raw.InboxPrefix
 	cfg.Auth = raw.Auth
