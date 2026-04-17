@@ -1,3 +1,4 @@
+# based on https://opentelemetry.io/docs/collector/extend/ocb/
 dist:
   module: github.com/m3nowak/otelcol-nats/dist/otelcol-nats
   name: otelcol-nats
@@ -9,6 +10,7 @@ exporters:
     import: github.com/m3nowak/otelcol-nats/exporter/otlpnatsjetstreamexporter
     path: .
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.150.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.150.0
 
 receivers:
   - gomod: github.com/m3nowak/otelcol-nats v0.0.0

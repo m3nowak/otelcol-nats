@@ -1,5 +1,7 @@
 # otelcol-nats
 
+This project is currently experimental and the component surface may still change before a stable `v1.0.0` release.
+
 This repository contains three OpenTelemetry Collector components for NATS:
 
 - `otlp_nats_jetstream` exporter in [exporter/otlpnatsjetstreamexporter](exporter/otlpnatsjetstreamexporter)
@@ -11,7 +13,7 @@ Current status:
 - shared NATS/JetStream config with endpoint and authentication validation
 - working exporter that publishes OTLP protobuf payloads to `otlp.v1.*` subjects
 - working pull-based receiver with ACK after successful downstream delivery
-- local builder manifest in [builder-config.yaml](builder-config.yaml)
+- builder manifest in [builder-config.local.yaml](builder-config.local.yaml)
 - component documentation in [exporter/otlpnatsjetstreamexporter/README.md](exporter/otlpnatsjetstreamexporter/README.md), [receiver/otlpnatsjetstreamreceiver/README.md](receiver/otlpnatsjetstreamreceiver/README.md), and [receiver/natsbrokerreceiver/README.md](receiver/natsbrokerreceiver/README.md)
 
 ## Demo
@@ -26,10 +28,59 @@ Example commands:
 
 ```bash
 go test ./...
-builder --config=builder-config.yaml
+mise run build
+mise run build-image --tag localhost/otelcol-nats:latest
 ```
 
 The default development endpoint for the transport components is `nats://127.0.0.1:4222`. The broker metrics receiver defaults to `http://127.0.0.1:8222`.
+
+## Install
+
+Release assets are published on GitHub for `linux/amd64` and `linux/arm64`.
+
+Container images are published to `ghcr.io/m3nowak/otelcol-nats:<version>`.
+
+Example:
+
+```bash
+docker run --rm ghcr.io/m3nowak/otelcol-nats:v0.0.1 --version
+```
+
+## Run
+
+Example collector configuration:
+
+```yaml
+receivers:
+	otlp:
+		protocols:
+			grpc:
+			http:
+
+exporters:
+	otlp_nats_jetstream:
+		endpoint: nats://127.0.0.1:4222
+		subject_prefix: otlp
+
+service:
+	pipelines:
+		traces:
+			receivers: [otlp]
+			exporters: [otlp_nats_jetstream]
+```
+
+Run the released container with a local config file:
+
+```bash
+docker run --rm \
+	-v "$PWD/otelcol.yaml:/etc/otelcol/config.yaml:ro" \
+	ghcr.io/m3nowak/otelcol-nats:v0.0.1 \
+	--config /etc/otelcol/config.yaml
+```
+
+## Releases
+
+Pushing a Git tag triggers the release workflow in GitHub Actions. The workflow builds native `linux/amd64` and `linux/arm64` binaries on separate runners, attaches both binaries and a `SHA256SUMS` file to the GitHub Release, and publishes the multi-platform container image to `ghcr.io/m3nowak/otelcol-nats`.
 
 ## Current limitations
 
