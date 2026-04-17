@@ -139,7 +139,9 @@ func (cfg *ClientConfig) Validate() error {
 		}
 		configuredAuthMethods++
 	}
-	if cfg.Auth.NKey != "" || cfg.Auth.JWT != "" {
+	if cfg.Auth.JWT != "" {
+		configuredAuthMethods++
+	} else if cfg.Auth.NKey != "" {
 		configuredAuthMethods++
 	}
 	if cfg.Auth.CredsPath != "" {

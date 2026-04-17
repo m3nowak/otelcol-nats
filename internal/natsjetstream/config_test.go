@@ -1,7 +1,6 @@
 package natsjetstream
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/nats-io/nats.go"
@@ -46,6 +45,16 @@ func TestClientConfigAllowsJWTWithNKey(t *testing.T) {
 	}
 }
 
+func TestClientConfigRejectsNKeyCombinedWithToken(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Auth.Token = "token"
+	cfg.Auth.NKey = mustCreateUserSeed(t)
+
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected nkey+token auth to be rejected")
+	}
+}
+
 func TestBuildConnectionOptionsUsesBearerJWTWhenSeedIsMissing(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.Auth.JWT = "jwt-bearer-token"
@@ -71,9 +80,10 @@ func TestBuildConnectionOptionsUsesBearerJWTWhenSeedIsMissing(t *testing.T) {
 }
 
 func TestBuildConnectionOptionsUsesUserJWTAndSeedWhenBothConfigured(t *testing.T) {
+	seed, publicKey := mustCreateUserCredentials(t)
 	cfg := NewDefaultClientConfig()
 	cfg.Auth.JWT = "jwt-with-seed"
-	cfg.Auth.NKey = mustCreateUserSeed(t)
+	cfg.Auth.NKey = seed
 
 	options, err := buildConnectionOptions(cfg)
 	if err != nil {
@@ -112,8 +122,12 @@ func TestBuildConnectionOptionsUsesUserJWTAndSeedWhenBothConfigured(t *testing.T
 	if len(signature) == 0 {
 		t.Fatal("expected nonce signature")
 	}
-	if bytes.Equal(signature, []byte("nonce")) {
-		t.Fatal("expected nonce signature to differ from the nonce")
+	verifier, err := nkeys.FromPublicKey(publicKey)
+	if err != nil {
+		t.Fatalf("load public nkey: %v", err)
+	}
+	if err := verifier.Verify([]byte("nonce"), signature); err != nil {
+		t.Fatalf("verify nonce signature: %v", err)
 	}
 }
 
@@ -124,9 +138,30 @@ func mustCreateUserSeed(t *testing.T) configopaque.String {
 	if err != nil {
 		t.Fatalf("create user nkey: %v", err)
 	}
+	seed, _ := mustCreateUserCredentialsFromPair(t, keyPair)
+	return seed
+}
+
+func mustCreateUserCredentials(t *testing.T) (configopaque.String, string) {
+	t.Helper()
+
+	keyPair, err := nkeys.CreateUser()
+	if err != nil {
+		t.Fatalf("create user nkey: %v", err)
+	}
+	return mustCreateUserCredentialsFromPair(t, keyPair)
+}
+
+func mustCreateUserCredentialsFromPair(t *testing.T, keyPair nkeys.KeyPair) (configopaque.String, string) {
+	t.Helper()
+
 	seed, err := keyPair.Seed()
 	if err != nil {
 		t.Fatalf("export user seed: %v", err)
 	}
-	return configopaque.String(seed)
+	publicKey, err := keyPair.PublicKey()
+	if err != nil {
+		t.Fatalf("export user public key: %v", err)
+	}
+	return configopaque.String(seed), publicKey
 }
