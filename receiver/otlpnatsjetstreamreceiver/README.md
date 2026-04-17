@@ -50,4 +50,4 @@ Supported settings:
 - Ephemeral consumers are created with `DeliverNewPolicy` and explicit acknowledgements.
 - Streams are not created automatically.
 - JWT auth is not wired yet.
-- Payload decompression is detected from the message `Content-Encoding` header and supports the OTLP/HTTP collector algorithms: `gzip`, `zstd`, `zlib`, `deflate`, `snappy`, `x-snappy-framed`, and `lz4`.
+- Payload decompression is detected from the message `Content-Encoding` header. A missing header or a value of `none` means the payload is treated as uncompressed; supported compressed encodings match the OTLP/HTTP collector algorithms: `gzip`, `zstd`, `zlib`, `deflate`, `snappy`, `x-snappy-framed`, and `lz4`.
