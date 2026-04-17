@@ -7,6 +7,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 func TestClientConfigRejectsMixedEndpointSchemes(t *testing.T) {
@@ -116,7 +117,7 @@ func TestBuildConnectionOptionsUsesUserJWTAndSeedWhenBothConfigured(t *testing.T
 	}
 }
 
-func mustCreateUserSeed(t *testing.T) string {
+func mustCreateUserSeed(t *testing.T) configopaque.String {
 	t.Helper()
 
 	keyPair, err := nkeys.CreateUser()
@@ -127,5 +128,5 @@ func mustCreateUserSeed(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("export user seed: %v", err)
 	}
-	return string(seed)
+	return configopaque.String(seed)
 }
