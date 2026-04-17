@@ -36,7 +36,7 @@ Supported settings:
 - `tls`: Collector TLS client settings used for the NATS connection.
 - `proxy_url`: Proxy configuration for `ws://` and `wss://` endpoints.
 - `inbox_prefix`: Custom NATS inbox prefix. Defaults to `_INBOX`.
-- `auth`: Optional authentication block. Supported mutually exclusive modes are token, username/password, NKey, JWT placeholder, and creds file.
+- `auth`: Optional authentication block. Supported mutually exclusive modes are token, username/password, creds file, NKey, or JWT. Set `auth.jwt` alone to log in with a bearer token, or combine `auth.jwt` with `auth.nkey` to use NATS JWT challenge-response authentication.
 - `stream.name`: Explicit stream name to bind to.
 - `stream.autodiscover_prefix`: Prefix used to resolve the stream by subject when `stream.name` is not provided. Defaults to `otlp.>`.
 - `consumer.durable`: Name of an existing durable pull consumer.
@@ -49,5 +49,4 @@ Supported settings:
 - Durable consumers must already exist. The receiver does not create durable consumers.
 - Ephemeral consumers are created with `DeliverNewPolicy` and explicit acknowledgements.
 - Streams are not created automatically.
-- JWT auth is not wired yet.
 - Payload decompression is detected from the message `Content-Encoding` header. A missing header or a value of `none` means the payload is treated as uncompressed; supported compressed encodings match the OTLP/HTTP collector algorithms: `gzip`, `zstd`, `zlib`, `deflate`, `snappy`, `x-snappy-framed`, and `lz4`.

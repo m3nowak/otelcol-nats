@@ -139,10 +139,7 @@ func (cfg *ClientConfig) Validate() error {
 		}
 		configuredAuthMethods++
 	}
-	if cfg.Auth.NKey != "" {
-		configuredAuthMethods++
-	}
-	if cfg.Auth.JWT != "" {
+	if cfg.Auth.NKey != "" || cfg.Auth.JWT != "" {
 		configuredAuthMethods++
 	}
 	if cfg.Auth.CredsPath != "" {
@@ -162,6 +159,40 @@ func (cfg *ClientConfig) Validate() error {
 	}
 
 	return nil
+}
+
+func buildConnectionOptions(cfg ClientConfig) ([]nats.Option, error) {
+	options := make([]nats.Option, 0, 8)
+	options = append(options, nats.Name("otelcol-nats"))
+	if cfg.InboxPrefix != "" {
+		options = append(options, nats.CustomInboxPrefix(cfg.InboxPrefix))
+	}
+	if cfg.ProxyURL != "" {
+		options = append(options, nats.ProxyPath(cfg.ProxyURL))
+	}
+	if cfg.Auth.Token != "" {
+		options = append(options, nats.Token(string(cfg.Auth.Token)))
+	}
+	if cfg.Auth.Username != "" {
+		options = append(options, nats.UserInfo(cfg.Auth.Username, string(cfg.Auth.Password)))
+	}
+	if cfg.Auth.CredsPath != "" {
+		options = append(options, nats.UserCredentials(cfg.Auth.CredsPath))
+	}
+	switch {
+	case cfg.Auth.JWT != "" && cfg.Auth.NKey != "":
+		options = append(options, nats.UserJWTAndSeed(string(cfg.Auth.JWT), string(cfg.Auth.NKey)))
+	case cfg.Auth.JWT != "":
+		options = append(options, nats.UserInfo("bearer", string(cfg.Auth.JWT)))
+	case cfg.Auth.NKey != "":
+		nkeyOption, err := nats.NkeyOptionFromSeed(string(cfg.Auth.NKey))
+		if err != nil {
+			return nil, fmt.Errorf("load nkey seed: %w", err)
+		}
+		options = append(options, nkeyOption)
+	}
+
+	return options, nil
 }
 
 func Subject(prefix string, signal Signal) string {
@@ -206,32 +237,9 @@ func parseEndpoints(value any) ([]string, error) {
 }
 
 func Connect(ctx context.Context, cfg ClientConfig) (*nats.Conn, jetstream.JetStream, error) {
-	options := make([]nats.Option, 0, 8)
-	options = append(options, nats.Name("otelcol-nats"))
-	if cfg.InboxPrefix != "" {
-		options = append(options, nats.CustomInboxPrefix(cfg.InboxPrefix))
-	}
-	if cfg.ProxyURL != "" {
-		options = append(options, nats.ProxyPath(cfg.ProxyURL))
-	}
-	if cfg.Auth.Token != "" {
-		options = append(options, nats.Token(string(cfg.Auth.Token)))
-	}
-	if cfg.Auth.Username != "" {
-		options = append(options, nats.UserInfo(cfg.Auth.Username, string(cfg.Auth.Password)))
-	}
-	if cfg.Auth.CredsPath != "" {
-		options = append(options, nats.UserCredentials(cfg.Auth.CredsPath))
-	}
-	if cfg.Auth.NKey != "" {
-		nkeyOption, err := nats.NkeyOptionFromSeed(string(cfg.Auth.NKey))
-		if err != nil {
-			return nil, nil, fmt.Errorf("load nkey seed: %w", err)
-		}
-		options = append(options, nkeyOption)
-	}
-	if cfg.Auth.JWT != "" {
-		return nil, nil, errors.New("jwt authentication is not wired yet; use creds or nkey for now")
+	options, err := buildConnectionOptions(cfg)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	connection, err := nats.Connect(strings.Join(cfg.Endpoints, ","), options...)

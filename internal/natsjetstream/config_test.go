@@ -1,8 +1,10 @@
 package natsjetstream
 
 import (
+	"bytes"
 	"testing"
 
+	"github.com/nats-io/nats.go"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
@@ -29,5 +31,86 @@ func TestClientConfigRejectsInvalidCompressionParams(t *testing.T) {
 
 	if err := cfg.Validate(); err == nil {
 		t.Fatal("expected compression validation error")
+	}
+}
+
+func TestClientConfigAllowsJWTWithNKey(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Auth.JWT = "eyJhbGciOiJIUzI1NiJ9.eyJuYXRzIjp7fX0.signature"
+	cfg.Auth.NKey = "SUAIO5V25PLWBIP2Z3SBY75B5L5S3YJ64CLKW5G7N5KQEPAPXBMGLXIQ"
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected jwt+nkey auth to be valid, got %v", err)
+	}
+}
+
+func TestBuildConnectionOptionsUsesBearerJWTWhenSeedIsMissing(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Auth.JWT = "jwt-bearer-token"
+
+	options, err := buildConnectionOptions(cfg)
+	if err != nil {
+		t.Fatalf("build connection options: %v", err)
+	}
+
+	natsOptions := nats.GetDefaultOptions()
+	for _, option := range options {
+		if err := option(&natsOptions); err != nil {
+			t.Fatalf("apply option: %v", err)
+		}
+	}
+
+	if natsOptions.User != "bearer" {
+		t.Fatalf("unexpected bearer user: %q", natsOptions.User)
+	}
+	if natsOptions.Password != "jwt-bearer-token" {
+		t.Fatalf("unexpected bearer password: %q", natsOptions.Password)
+	}
+}
+
+func TestBuildConnectionOptionsUsesUserJWTAndSeedWhenBothConfigured(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Auth.JWT = "jwt-with-seed"
+	cfg.Auth.NKey = "SUAIO5V25PLWBIP2Z3SBY75B5L5S3YJ64CLKW5G7N5KQEPAPXBMGLXIQ"
+
+	options, err := buildConnectionOptions(cfg)
+	if err != nil {
+		t.Fatalf("build connection options: %v", err)
+	}
+
+	natsOptions := nats.GetDefaultOptions()
+	for _, option := range options {
+		if err := option(&natsOptions); err != nil {
+			t.Fatalf("apply option: %v", err)
+		}
+	}
+
+	if natsOptions.User != "" || natsOptions.Password != "" {
+		t.Fatalf("expected jwt auth instead of user/password, got user=%q password=%q", natsOptions.User, natsOptions.Password)
+	}
+	if natsOptions.UserJWT == nil {
+		t.Fatal("expected jwt callback to be configured")
+	}
+	if natsOptions.SignatureCB == nil {
+		t.Fatal("expected signature callback to be configured")
+	}
+
+	jwt, err := natsOptions.UserJWT()
+	if err != nil {
+		t.Fatalf("read jwt callback: %v", err)
+	}
+	if jwt != "jwt-with-seed" {
+		t.Fatalf("unexpected jwt: %q", jwt)
+	}
+
+	signature, err := natsOptions.SignatureCB([]byte("nonce"))
+	if err != nil {
+		t.Fatalf("sign nonce: %v", err)
+	}
+	if len(signature) == 0 {
+		t.Fatal("expected nonce signature")
+	}
+	if bytes.Equal(signature, []byte("nonce")) {
+		t.Fatal("expected nonce signature to differ from the nonce")
 	}
 }
