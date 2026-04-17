@@ -38,7 +38,7 @@ func TestClientConfigRejectsInvalidCompressionParams(t *testing.T) {
 
 func TestClientConfigAllowsJWTWithNKey(t *testing.T) {
 	cfg := NewDefaultClientConfig()
-	cfg.Auth.JWT = "eyJhbGciOiJIUzI1NiJ9.eyJuYXRzIjp7fX0.signature"
+	cfg.Auth.JWT = "test-jwt-token"
 	cfg.Auth.NKey = mustCreateUserSeed(t)
 
 	if err := cfg.Validate(); err != nil {
