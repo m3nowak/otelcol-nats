@@ -26,6 +26,31 @@ const (
 	jszPath  = "/jsz?consumers=true&config=true&raft=true"
 )
 
+var (
+	varzSkippedFQNs = map[string]struct{}{
+		"leaf":                    {},
+		"trusted_operators_claim": {},
+		"cluster_tls_timeout":     {},
+		"cluster_cluster_port":    {},
+		"cluster_auth_timeout":    {},
+		"gateway_port":            {},
+		"gateway_auth_timeout":    {},
+		"gateway_tls_timeout":     {},
+		"gateway_connect_retries": {},
+	}
+
+	varzLabelKeys = map[string]struct{}{
+		"server_id":        {},
+		"server_name":      {},
+		"version":          {},
+		"domain":           {},
+		"leader":           {},
+		"name":             {},
+		"start":            {},
+		"config_load_time": {},
+	}
+)
+
 type receiverComponent struct {
 	cfg       *Config
 	set       receiver.Settings
@@ -252,32 +277,9 @@ func (b *metricsBuilder) addGaugePoint(name, description string, timestamp pcomm
 }
 
 func appendVarzMetrics(builder *metricsBuilder, endpointID string, timestamp pcommon.Timestamp, response map[string]any, prefix ...string) {
-	skipFQN := map[string]struct{}{
-		"leaf":                    {},
-		"trusted_operators_claim": {},
-		"cluster_tls_timeout":     {},
-		"cluster_cluster_port":    {},
-		"cluster_auth_timeout":    {},
-		"gateway_port":            {},
-		"gateway_auth_timeout":    {},
-		"gateway_tls_timeout":     {},
-		"gateway_connect_retries": {},
-	}
-
-	labelKeys := map[string]struct{}{
-		"server_id":        {},
-		"server_name":      {},
-		"version":          {},
-		"domain":           {},
-		"leader":           {},
-		"name":             {},
-		"start":            {},
-		"config_load_time": {},
-	}
-
 	for key, value := range response {
 		fqn, path := fqName(key, prefix...)
-		if _, ok := skipFQN[fqn]; ok {
+		if _, ok := varzSkippedFQNs[fqn]; ok {
 			continue
 		}
 
@@ -285,7 +287,7 @@ func appendVarzMetrics(builder *metricsBuilder, endpointID string, timestamp pco
 		case float64:
 			builder.addGaugePoint("gnatsd_varz_"+fqn, fqn, timestamp, typed, map[string]string{"server_id": endpointID})
 		case string:
-			if _, ok := labelKeys[key]; !ok {
+			if _, ok := varzLabelKeys[key]; !ok {
 				continue
 			}
 			if parsed, err := time.Parse(time.RFC3339Nano, typed); err == nil {
