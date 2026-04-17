@@ -40,3 +40,36 @@ func TestConfigUnmarshalAcceptsReceiverFields(t *testing.T) {
 		t.Fatalf("expected default timeout to be preserved, got %v", cfg.Timeout)
 	}
 }
+
+func TestConfigUnmarshalRejectsRemovedCompressionFields(t *testing.T) {
+	testCases := []struct {
+		name string
+		data map[string]any
+	}{
+		{
+			name: "compression",
+			data: map[string]any{
+				"compression": "gzip",
+			},
+		},
+		{
+			name: "compression params",
+			data: map[string]any{
+				"compression_params": map[string]any{
+					"level": 1,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			conf := confmap.NewFromStringMap(tc.data)
+
+			if err := conf.Unmarshal(cfg); err == nil {
+				t.Fatal("expected unmarshal error")
+			}
+		})
+	}
+}

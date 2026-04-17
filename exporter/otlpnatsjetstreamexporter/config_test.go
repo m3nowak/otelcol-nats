@@ -11,6 +11,7 @@ func TestConfigUnmarshalAcceptsComponentFields(t *testing.T) {
 	conf := confmap.NewFromStringMap(map[string]any{
 		"endpoint":       "nats://127.0.0.1:4222",
 		"subject_prefix": "demo",
+		"compression":    "zstd",
 		"headers": map[string]any{
 			"x-test": "value",
 		},
@@ -26,10 +27,20 @@ func TestConfigUnmarshalAcceptsComponentFields(t *testing.T) {
 	if cfg.SubjectPrefix != "demo" {
 		t.Fatalf("unexpected subject prefix: %q", cfg.SubjectPrefix)
 	}
+	if cfg.Compression != "zstd" {
+		t.Fatalf("unexpected compression: %q", cfg.Compression)
+	}
 	if cfg.Headers["x-test"] != "value" {
 		t.Fatalf("unexpected headers: %#v", cfg.Headers)
 	}
 	if cfg.TimeoutConfig.Timeout <= 0 {
 		t.Fatalf("expected default timeout to be preserved, got %v", cfg.TimeoutConfig.Timeout)
+	}
+}
+
+func TestCreateDefaultConfigUsesGzipCompression(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	if cfg.Compression != "gzip" {
+		t.Fatalf("unexpected default compression: %q", cfg.Compression)
 	}
 }

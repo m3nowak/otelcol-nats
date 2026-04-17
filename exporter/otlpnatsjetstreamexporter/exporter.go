@@ -94,7 +94,7 @@ func (exp *exporterComponent) publish(ctx context.Context, signal natsjetstream.
 		return fmt.Errorf("exporter is not started")
 	}
 
-	compressedPayload, err := natsjetstream.CompressPayload(payload, exp.cfg.Compression)
+	compressedPayload, err := natsjetstream.CompressPayload(payload, exp.cfg.Compression, exp.cfg.CompressionParams)
 	if err != nil {
 		return err
 	}
@@ -104,8 +104,8 @@ func (exp *exporterComponent) publish(ctx context.Context, signal natsjetstream.
 	for key, value := range exp.cfg.Headers {
 		message.Header.Set(key, value)
 	}
-	if exp.cfg.Compression != "" && exp.cfg.Compression != "none" {
-		message.Header.Set("Content-Encoding", exp.cfg.Compression)
+	if exp.cfg.Compression.IsCompressed() {
+		message.Header.Set("Content-Encoding", string(exp.cfg.Compression))
 	}
 
 	if _, err := js.PublishMsg(ctx, message); err != nil {

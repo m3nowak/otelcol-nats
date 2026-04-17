@@ -21,6 +21,7 @@ exporters:
     endpoint: nats://127.0.0.1:4222
     subject_prefix: otlp
     timeout: 5s
+    compression: gzip
     retry_on_failure:
       enabled: true
     sending_queue:
@@ -33,8 +34,8 @@ Supported settings:
 
 - `endpoint`: NATS server endpoint as a string or a list of endpoints. Supported schemes are `nats://`, `tls://`, `ws://`, and `wss://`.
 - `tls`: Collector TLS client settings used for the NATS connection.
-- `compression`: Payload compression. Currently supported values are `none` and `gzip`.
-- `compression_params`: Reserved for future compression tuning.
+- `compression`: Payload compression. Supported values match OTLP/HTTP: `none`, `gzip`, `zstd`, `zlib`, `deflate`, `snappy`, `x-snappy-framed`, and `lz4`. Defaults to `gzip`.
+- `compression_params`: Compression tuning compatible with OTLP/HTTP collector settings.
 - `proxy_url`: Proxy configuration for `ws://` and `wss://` endpoints.
 - `inbox_prefix`: Custom NATS inbox prefix. Defaults to `_INBOX`.
 - `auth`: Optional authentication block. Supported mutually exclusive modes are token, username/password, NKey, JWT placeholder, and creds file.
@@ -50,3 +51,4 @@ Supported settings:
 - The first iteration does not implement `expected_stream`.
 - JWT auth is not wired yet.
 - The exporter does not create streams. Stream provisioning remains an external responsibility.
+- When compression is enabled, the exporter writes the standard `Content-Encoding` header on published messages.
