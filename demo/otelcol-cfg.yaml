@@ -4,6 +4,12 @@ receivers:
       http:
         endpoint: 0.0.0.0:14318
 
+  nats_broker:
+    endpoint:
+      - http://127.0.0.1:8222
+    collection_interval: 10s
+    timeout: 5s
+
   otlp_nats_jetstream:
     endpoint: nats://127.0.0.1:4222
     stream:
@@ -42,6 +48,11 @@ service:
 
     metrics/from-nats:
       receivers: [ otlp_nats_jetstream ]
+      processors: []
+      exporters: [ otlp_http/lgtm ]
+
+    metrics/from-broker:
+      receivers: [ nats_broker ]
       processors: []
       exporters: [ otlp_http/lgtm ]
 
