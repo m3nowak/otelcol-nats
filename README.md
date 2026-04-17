@@ -33,4 +33,4 @@ The default development endpoint for the components is `nats://127.0.0.1:4222`.
 ## Current limitations
 
 - `jwt` authentication is currently validated at the configuration level only and is not yet wired into the NATS client
-- compression currently supports only `gzip` or no compression
+- compression matches OTLP/HTTP collector behavior for `gzip`, `zstd`, `zlib`, `deflate`, `snappy`, `x-snappy-framed`, `lz4`, and `none`

@@ -5,34 +5,39 @@ import (
 
 	"github.com/m3nowak/otelcol-nats/internal/natsjetstream"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 type Config struct {
 	natsjetstream.ClientConfig `mapstructure:",squash"`
-	TimeoutConfig              exporterhelper.TimeoutConfig                        `mapstructure:",squash"`
+	TimeoutConfig              exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
 	QueueConfig                configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	RetryConfig                configretry.BackOffConfig                           `mapstructure:"retry_on_failure"`
-	SubjectPrefix              string                                              `mapstructure:"subject_prefix"`
-	Headers                    map[string]string                                   `mapstructure:"headers"`
+	RetryConfig                configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	SubjectPrefix              string                                                   `mapstructure:"subject_prefix"`
+	Headers                    map[string]string                                        `mapstructure:"headers"`
 
 	_ struct{}
 }
 
 var (
-	_ component.Config   = (*Config)(nil)
+	_ component.Config    = (*Config)(nil)
 	_ confmap.Unmarshaler = (*Config)(nil)
-	_ xconfmap.Validator = (*Config)(nil)
+	_ xconfmap.Validator  = (*Config)(nil)
 )
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ClientConfig:  natsjetstream.NewDefaultClientConfig(),
+		ClientConfig: natsjetstream.ClientConfig{
+			Endpoints:   []string{natsjetstream.DefaultEndpoint},
+			InboxPrefix: natsjetstream.DefaultInboxPrefix,
+			Compression: configcompression.TypeGzip,
+		},
 		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
 		QueueConfig:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		RetryConfig:   configretry.NewDefaultBackOffConfig(),
@@ -45,8 +50,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	type rawConfig struct {
 		Endpoint          any                                                      `mapstructure:"endpoint"`
 		TLS               configtls.ClientConfig                                   `mapstructure:"tls"`
-		Compression       string                                                   `mapstructure:"compression"`
-		CompressionParams map[string]any                                           `mapstructure:"compression_params"`
+		Compression       configcompression.Type                                   `mapstructure:"compression"`
+		CompressionParams configcompression.CompressionParams                      `mapstructure:"compression_params"`
 		ProxyURL          string                                                   `mapstructure:"proxy_url"`
 		InboxPrefix       string                                                   `mapstructure:"inbox_prefix"`
 		Auth              natsjetstream.AuthConfig                                 `mapstructure:"auth"`

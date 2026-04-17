@@ -13,6 +13,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -91,6 +92,7 @@ func TestEndToEndTraceFlowAcksMessage(t *testing.T) {
 	exporterCfg := exporterFactory.CreateDefaultConfig().(*otlpnatsjetstreamexporter.Config)
 	exporterCfg.Endpoints = []string{natsjetstream.DefaultEndpoint}
 	exporterCfg.SubjectPrefix = prefix
+	exporterCfg.Compression = configcompression.TypeZstd
 
 	exporterComponent, err := exporterFactory.CreateTraces(ctx, exporter.Settings{
 		ID:                component.MustNewID("otlp_nats_jetstream"),
@@ -207,6 +209,7 @@ func TestEndToEndMetricsFlowAcksMessage(t *testing.T) {
 	exporterCfg := exporterFactory.CreateDefaultConfig().(*otlpnatsjetstreamexporter.Config)
 	exporterCfg.Endpoints = []string{natsjetstream.DefaultEndpoint}
 	exporterCfg.SubjectPrefix = prefix
+	exporterCfg.Compression = configcompression.TypeSnappy
 
 	exporterComponent, err := exporterFactory.CreateMetrics(ctx, exporter.Settings{
 		ID:                component.MustNewID("otlp_nats_jetstream"),

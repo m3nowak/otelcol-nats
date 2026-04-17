@@ -3,9 +3,13 @@ module github.com/m3nowak/otelcol-nats
 go 1.25.9
 
 require (
+	github.com/golang/snappy v1.0.0
+	github.com/klauspost/compress v1.18.5
 	github.com/nats-io/nats.go v1.51.0
+	github.com/pierrec/lz4/v4 v4.1.26
 	go.opentelemetry.io/collector/component v1.56.0
 	go.opentelemetry.io/collector/component/componenttest v0.150.0
+	go.opentelemetry.io/collector/config/configcompression v1.56.0
 	go.opentelemetry.io/collector/config/configopaque v1.56.0
 	go.opentelemetry.io/collector/config/configoptional v1.56.0
 	go.opentelemetry.io/collector/config/configretry v1.56.0
@@ -36,7 +40,6 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.4 // indirect

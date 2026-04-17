@@ -334,10 +334,6 @@ func (rcv *receiverComponent) consumeMessage(msg jetstream.Msg) (ackAction, erro
 	}
 
 	compression := msg.Headers().Get("Content-Encoding")
-	if compression == "" {
-		compression = rcv.cfg.Compression
-	}
-
 	payload, err := natsjetstream.DecompressPayload(msg.Data(), compression)
 	if err != nil {
 		return ackActionTerm, err

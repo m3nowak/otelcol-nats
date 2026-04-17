@@ -11,6 +11,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -52,6 +53,7 @@ func TestExporterPublishesTracePayloadToJetStream(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoints = []string{natsjetstream.DefaultEndpoint}
 	cfg.SubjectPrefix = prefix
+	cfg.Compression = configcompression.TypeZstd
 
 	exp := newExporter(cfg, exporter.Settings{
 		ID: component.MustNewID("otlp_nats_jetstream"),
@@ -81,9 +83,17 @@ func TestExporterPublishesTracePayloadToJetStream(t *testing.T) {
 	if storedMsg.Subject != traceSubject {
 		t.Fatalf("unexpected subject: %s", storedMsg.Subject)
 	}
+	if storedMsg.Header.Get("Content-Encoding") != "zstd" {
+		t.Fatalf("unexpected content encoding: %q", storedMsg.Header.Get("Content-Encoding"))
+	}
+
+	payload, err := natsjetstream.DecompressPayload(storedMsg.Data, storedMsg.Header.Get("Content-Encoding"))
+	if err != nil {
+		t.Fatalf("decompress published payload: %v", err)
+	}
 
 	request := ptraceotlp.NewExportRequest()
-	if err := request.UnmarshalProto(storedMsg.Data); err != nil {
+	if err := request.UnmarshalProto(payload); err != nil {
 		t.Fatalf("unmarshal published payload: %v", err)
 	}
 

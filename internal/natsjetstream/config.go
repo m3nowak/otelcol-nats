@@ -1,12 +1,9 @@
 package natsjetstream
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"slices"
 	"strings"
@@ -15,6 +12,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -78,13 +76,13 @@ type AuthConfig struct {
 }
 
 type ClientConfig struct {
-	Endpoints         []string              `mapstructure:"endpoint"`
-	TLS               configtls.ClientConfig `mapstructure:"tls"`
-	Compression       string                `mapstructure:"compression"`
-	CompressionParams map[string]any        `mapstructure:"compression_params"`
-	ProxyURL          string                `mapstructure:"proxy_url"`
-	InboxPrefix       string                `mapstructure:"inbox_prefix"`
-	Auth              AuthConfig            `mapstructure:"auth"`
+	Endpoints         []string                            `mapstructure:"endpoint"`
+	TLS               configtls.ClientConfig              `mapstructure:"tls"`
+	Compression       configcompression.Type              `mapstructure:"compression"`
+	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
+	ProxyURL          string                              `mapstructure:"proxy_url"`
+	InboxPrefix       string                              `mapstructure:"inbox_prefix"`
+	Auth              AuthConfig                          `mapstructure:"auth"`
 
 	_ struct{}
 }
@@ -157,6 +155,11 @@ func (cfg *ClientConfig) Validate() error {
 	if cfg.InboxPrefix == "" {
 		cfg.InboxPrefix = DefaultInboxPrefix
 	}
+	if cfg.Compression.IsCompressed() {
+		if err := cfg.Compression.ValidateParams(cfg.CompressionParams); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -167,46 +170,6 @@ func Subject(prefix string, signal Signal) string {
 		trimmedPrefix = DefaultSubjectPrefix
 	}
 	return trimmedPrefix + "." + signal.SubjectSuffix()
-}
-
-func CompressPayload(payload []byte, compression string) ([]byte, error) {
-	switch strings.ToLower(strings.TrimSpace(compression)) {
-	case "", "none":
-		return payload, nil
-	case "gzip":
-		var buffer bytes.Buffer
-		writer := gzip.NewWriter(&buffer)
-		if _, err := writer.Write(payload); err != nil {
-			return nil, fmt.Errorf("gzip payload: %w", err)
-		}
-		if err := writer.Close(); err != nil {
-			return nil, fmt.Errorf("close gzip payload: %w", err)
-		}
-		return buffer.Bytes(), nil
-	default:
-		return nil, fmt.Errorf("unsupported compression %q", compression)
-	}
-}
-
-func DecompressPayload(payload []byte, compression string) ([]byte, error) {
-	switch strings.ToLower(strings.TrimSpace(compression)) {
-	case "", "none":
-		return payload, nil
-	case "gzip":
-		reader, err := gzip.NewReader(bytes.NewReader(payload))
-		if err != nil {
-			return nil, fmt.Errorf("open gzip payload: %w", err)
-		}
-		defer reader.Close()
-
-		decoded, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, fmt.Errorf("read gzip payload: %w", err)
-		}
-		return decoded, nil
-	default:
-		return nil, fmt.Errorf("unsupported compression %q", compression)
-	}
 }
 
 func ParseEndpoints(value any) ([]string, error) {
