@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
+// snappyFramingHeader is the magic header that identifies Snappy framed payloads.
 var snappyFramingHeader = []byte{
 	0xff, 0x06, 0x00, 0x00,
 	0x73, 0x4e, 0x61, 0x50, 0x70, 0x59,
