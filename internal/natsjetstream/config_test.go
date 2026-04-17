@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nkeys"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
@@ -37,7 +38,7 @@ func TestClientConfigRejectsInvalidCompressionParams(t *testing.T) {
 func TestClientConfigAllowsJWTWithNKey(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.Auth.JWT = "eyJhbGciOiJIUzI1NiJ9.eyJuYXRzIjp7fX0.signature"
-	cfg.Auth.NKey = "SUAIO5V25PLWBIP2Z3SBY75B5L5S3YJ64CLKW5G7N5KQEPAPXBMGLXIQ"
+	cfg.Auth.NKey = mustCreateUserSeed(t)
 
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("expected jwt+nkey auth to be valid, got %v", err)
@@ -71,7 +72,7 @@ func TestBuildConnectionOptionsUsesBearerJWTWhenSeedIsMissing(t *testing.T) {
 func TestBuildConnectionOptionsUsesUserJWTAndSeedWhenBothConfigured(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.Auth.JWT = "jwt-with-seed"
-	cfg.Auth.NKey = "SUAIO5V25PLWBIP2Z3SBY75B5L5S3YJ64CLKW5G7N5KQEPAPXBMGLXIQ"
+	cfg.Auth.NKey = mustCreateUserSeed(t)
 
 	options, err := buildConnectionOptions(cfg)
 	if err != nil {
@@ -113,4 +114,18 @@ func TestBuildConnectionOptionsUsesUserJWTAndSeedWhenBothConfigured(t *testing.T
 	if bytes.Equal(signature, []byte("nonce")) {
 		t.Fatal("expected nonce signature to differ from the nonce")
 	}
+}
+
+func mustCreateUserSeed(t *testing.T) string {
+	t.Helper()
+
+	keyPair, err := nkeys.CreateUser()
+	if err != nil {
+		t.Fatalf("create user nkey: %v", err)
+	}
+	seed, err := keyPair.Seed()
+	if err != nil {
+		t.Fatalf("export user seed: %v", err)
+	}
+	return string(seed)
 }
