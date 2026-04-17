@@ -27,13 +27,13 @@ jobs:
 
         steps:
             - name: Check out repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   ref: ${{ github.event.release.tag_name }}
                   fetch-depth: 0
 
             - name: Set up mise
-              uses: jdx/mise-action@v3
+              uses: jdx/mise-action@v4
               with:
                   install: true
                   cache: true
@@ -48,7 +48,7 @@ jobs:
                   chmod +x dist/otelcol-nats-linux-${{ matrix.goarch }}
 
             - name: Upload binary artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: otelcol-nats-linux-${{ matrix.goarch }}
                   path: dist/otelcol-nats-linux-${{ matrix.goarch }}
@@ -62,7 +62,7 @@ jobs:
 
         steps:
             - name: Check out repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   ref: ${{ github.event.release.tag_name }}
 
@@ -82,7 +82,8 @@ jobs:
             - name: Build and publish multi-platform image
               run: >-
                   docker buildx build --platform linux/amd64,linux/arm64 --push
-                  -t $IMAGE_NAME:${{ github.event.release.tag_name }} .
+                  -t $IMAGE_NAME:${{ github.event.release.tag_name }} -f
+                  Containerfile .
 
     upload-release-assets:
         name: Upload GitHub Release assets

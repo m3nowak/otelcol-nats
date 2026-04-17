@@ -30,4 +30,4 @@ description = "Build the Docker image for otelcol-nats"
 usage = '''
 flag "-t --tag <tag>" help="Image tag to use for the built image" default="localhost/otelcol-nats:latest"
 '''
-run = "docker build -t {{ usage.tag }} ."
+run = "docker build -t {{ usage.tag }} -f Containerfile ."
