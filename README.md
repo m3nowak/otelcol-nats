@@ -1,9 +1,10 @@
 # otelcol-nats
 
-This repository contains two OpenTelemetry Collector components for OTLP over NATS JetStream transport:
+This repository contains three OpenTelemetry Collector components for NATS:
 
 - `otlp_nats_jetstream` exporter in [exporter/otlpnatsjetstreamexporter](exporter/otlpnatsjetstreamexporter)
 - `otlp_nats_jetstream` receiver in [receiver/otlpnatsjetstreamreceiver](receiver/otlpnatsjetstreamreceiver)
+- `nats_broker` metrics receiver in [receiver/natsbrokerreceiver](receiver/natsbrokerreceiver)
 
 Current status:
 
@@ -11,7 +12,7 @@ Current status:
 - working exporter that publishes OTLP protobuf payloads to `otlp.v1.*` subjects
 - working pull-based receiver with ACK after successful downstream delivery
 - local builder manifest in [builder-config.yaml](builder-config.yaml)
-- component documentation in [exporter/otlpnatsjetstreamexporter/README.md](exporter/otlpnatsjetstreamexporter/README.md) and [receiver/otlpnatsjetstreamreceiver/README.md](receiver/otlpnatsjetstreamreceiver/README.md)
+- component documentation in [exporter/otlpnatsjetstreamexporter/README.md](exporter/otlpnatsjetstreamexporter/README.md), [receiver/otlpnatsjetstreamreceiver/README.md](receiver/otlpnatsjetstreamreceiver/README.md), and [receiver/natsbrokerreceiver/README.md](receiver/natsbrokerreceiver/README.md)
 
 ## Demo
 
@@ -28,7 +29,7 @@ go test ./...
 builder --config=builder-config.yaml
 ```
 
-The default development endpoint for the components is `nats://127.0.0.1:4222`.
+The default development endpoint for the transport components is `nats://127.0.0.1:4222`. The broker metrics receiver defaults to `http://127.0.0.1:8222`.
 
 ## Current limitations
 
