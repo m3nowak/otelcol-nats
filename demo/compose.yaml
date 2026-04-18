@@ -8,6 +8,7 @@ services:
 
   nats:
     image: docker.io/library/nats:2.12.7
-    command: [ "-js" ]
+    command: [ "-js", "-m", "8222" ]
     ports:
       - "4222:4222"
+      - "8222:8222"

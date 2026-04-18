@@ -1,8 +1,33 @@
 [tools]
-# "github:open-telemetry/opentelemetry-collector-releases" = { version = "latest", version_prefix = "cmd/builder/v" }
 "github:nats-io/nats-server" = "latest"
 "github:nats-io/natscli" = "latest"
 go = "1.25"
 nsc = "latest"
-"go:go.opentelemetry.io/collector/cmd/builder" = "latest"
-"go:github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen" = "latest"
+"go:go.opentelemetry.io/collector/cmd/builder" = "0.150"
+"go:github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen" = "0.150"
+
+[tasks.mk_build_dir]
+description = "Create the build directory"
+run = "mkdir -p _build"
+hide = true
+
+[tasks.build]
+description = "Build the otelcol-nats binary using the builder tool"
+run = "builder --config builder-config.local.yaml"
+depends = "mk_build_dir"
+sources = [
+    "receiver/**/*.go",
+    "exporter/**/*.go",
+    "internal/**/*.go",
+    "builder-config.local.yaml",
+    "go.mod",
+    "go.sum",
+]
+outputs = ["_build/otelcol-nats/otelcol-nats"]
+
+[tasks.build-image]
+description = "Build the Docker image for otelcol-nats"
+usage = '''
+flag "-t --tag <tag>" help="Image tag to use for the built image" default="localhost/otelcol-nats:latest"
+'''
+run = "docker build -t {{ usage.tag }} -f Containerfile ."
