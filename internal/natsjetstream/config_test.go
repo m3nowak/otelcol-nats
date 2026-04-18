@@ -1,6 +1,8 @@
 package natsjetstream
 
 import (
+	"context"
+	"strings"
 	"testing"
 
 	"github.com/nats-io/nats.go"
@@ -128,6 +130,20 @@ func TestBuildConnectionOptionsUsesUserJWTAndSeedWhenBothConfigured(t *testing.T
 	}
 	if err := verifier.Verify([]byte("nonce"), signature); err != nil {
 		t.Fatalf("verify nonce signature: %v", err)
+	}
+}
+
+func TestConnectValidatesClientConfigBeforeDialing(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Auth.Token = "token"
+	cfg.Auth.JWT = "jwt"
+
+	_, _, err := Connect(context.Background(), cfg)
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+	if !strings.Contains(err.Error(), "mutually exclusive") {
+		t.Fatalf("expected mutual exclusivity error, got %v", err)
 	}
 }
 

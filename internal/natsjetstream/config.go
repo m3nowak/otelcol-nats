@@ -239,6 +239,10 @@ func parseEndpoints(value any) ([]string, error) {
 }
 
 func Connect(ctx context.Context, cfg ClientConfig) (*nats.Conn, jetstream.JetStream, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, nil, err
+	}
+
 	options, err := buildConnectionOptions(cfg)
 	if err != nil {
 		return nil, nil, err
