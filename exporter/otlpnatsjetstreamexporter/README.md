@@ -38,7 +38,7 @@ Supported settings:
 - `compression_params`: Compression tuning compatible with OTLP/HTTP collector settings.
 - `proxy_url`: Proxy configuration for `ws://` and `wss://` endpoints.
 - `inbox_prefix`: Custom NATS inbox prefix. Defaults to `_INBOX`.
-- `auth`: Optional authentication block. Supported mutually exclusive modes are token, username/password, creds file, NKey, or JWT. Set `auth.jwt` alone to log in with a bearer token, or combine `auth.jwt` with `auth.nkey` to use NATS JWT challenge-response authentication.
+- `auth`: Optional authentication block. Supported modes are token, username/password, creds file, NKey, JWT, and JWT+NKey. Set `auth.jwt` alone to log in with a bearer token, or combine `auth.jwt` with `auth.nkey` to use NATS JWT challenge-response authentication.
 - `subject_prefix`: Prefix used when building JetStream subjects. Defaults to `otlp`.
 - `timeout`: Per-attempt exporter timeout from Collector exporter helper.
 - `retry_on_failure`: Standard Collector exporter retry settings.
