@@ -14,12 +14,12 @@ The demo shows two data paths:
 
 ```mermaid
 flowchart TD
-    R1[OLTP-HTTP Receiver :14318]
+    R1[OTLP-HTTP Receiver :14318]
     R2[Nats Broker Receiver]
-    R3[OLTP Nats Jetstream Receiver]
+    R3[OTLP Nats Jetstream Receiver]
     
-    E1[OLTP Nats Jetstream Exporter]
-    E2[OLTP-HTTP Exporter]
+    E1[OTLP Nats Jetstream Exporter]
+    E2[OTLP-HTTP Exporter]
     
     NBM[Nats Broker Monitoring :8222]
     NB[Nats Broker :4222]

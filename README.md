@@ -52,37 +52,32 @@ Example collector configuration:
 
 ```yaml
 receivers:
-	otlp:
-		protocols:
-			grpc:
-			http:
+  otlp:
+    protocols:
+      grpc:
+      http:
 
 exporters:
-	otlp_nats_jetstream:
-		endpoint: nats://127.0.0.1:4222
-		subject_prefix: otlp
+  otlp_nats_jetstream:
+    endpoint: nats://127.0.0.1:4222
+    subject_prefix: otlp
 
 service:
-	pipelines:
-		traces:
-			receivers: [otlp]
-			exporters: [otlp_nats_jetstream]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp_nats_jetstream]
 ```
 
 Run the released container with a local config file:
 
 ```bash
 docker run --rm \
-	-v "$PWD/otelcol.yaml:/etc/otelcol/config.yaml:ro" \
-	ghcr.io/m3nowak/otelcol-nats:v0.0.1 \
-	--config /etc/otelcol/config.yaml
+  -v "$PWD/otelcol.yaml:/etc/otelcol/config.yaml:ro" \
+  ghcr.io/m3nowak/otelcol-nats:v0.0.1 \
+  --config /etc/otelcol/config.yaml
 ```
 
 ## Releases
 
 Publishing a GitHub Release triggers the release workflow in GitHub Actions. The release can create the tag in the GitHub UI, and the workflow then builds native `linux/amd64` and `linux/arm64` binaries, attaches both binaries and a `SHA256SUMS` file to that existing release, and publishes the multi-platform container image to `ghcr.io/m3nowak/otelcol-nats`.
-
-## Current limitations
-
-- `jwt` authentication is currently validated at the configuration level only and is not yet wired into the NATS client
-- compression matches OTLP/HTTP collector behavior for `gzip`, `zstd`, `zlib`, `deflate`, `snappy`, `x-snappy-framed`, `lz4`, and `none`
