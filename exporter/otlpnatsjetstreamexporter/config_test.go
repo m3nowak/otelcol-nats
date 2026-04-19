@@ -54,7 +54,7 @@ func TestCreateDefaultConfigUsesGzipCompression(t *testing.T) {
 
 func TestConfigValidateNormalizesSubjectPrefixAndExpectedStream(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.SubjectPrefix = " demo. "
+	cfg.SubjectPrefix = " demo... "
 	cfg.ExpectedStream = " OTLP "
 
 	if err := cfg.Validate(); err != nil {
