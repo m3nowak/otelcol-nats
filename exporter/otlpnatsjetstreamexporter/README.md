@@ -20,6 +20,7 @@ exporters:
   otlp_nats_jetstream:
     endpoint: nats://127.0.0.1:4222
     subject_prefix: otlp
+    expected_stream: OTLP
     timeout: 5s
     compression: gzip
     retry_on_failure:
@@ -40,6 +41,7 @@ Supported settings:
 - `inbox_prefix`: Custom NATS inbox prefix. Defaults to `_INBOX`.
 - `auth`: Optional authentication block. Supported modes are token, username/password, creds file, NKey, JWT, and JWT+NKey. Set `auth.jwt` alone to log in with a bearer token, or combine `auth.jwt` with `auth.nkey` to use NATS JWT challenge-response authentication.
 - `subject_prefix`: Prefix used when building JetStream subjects. Defaults to `otlp`.
+- `expected_stream`: Optional JetStream stream name to require in the publish acknowledgement. When set, the exporter uses JetStream publish expectations so a batch is only treated as exported after the server confirms it was stored in that stream.
 - `timeout`: Per-attempt exporter timeout from Collector exporter helper.
 - `retry_on_failure`: Standard Collector exporter retry settings.
 - `sending_queue`: Standard Collector exporter queue settings.
@@ -48,6 +50,6 @@ Supported settings:
 ## Current Notes
 
 - The exporter expects JetStream to be enabled on the target NATS server.
-- The first iteration does not implement `expected_stream`.
 - The exporter does not create streams. Stream provisioning remains an external responsibility.
+- If no stream matches the publish subject, the exporter returns an error and the batch is not treated as successfully exported.
 - When compression is enabled, the exporter writes the standard `Content-Encoding` header on published messages.

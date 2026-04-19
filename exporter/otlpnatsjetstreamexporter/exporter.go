@@ -108,7 +108,12 @@ func (exp *exporterComponent) publish(ctx context.Context, signal natsjetstream.
 		message.Header.Set("Content-Encoding", string(exp.cfg.Compression))
 	}
 
-	if _, err := js.PublishMsg(ctx, message); err != nil {
+	if exp.cfg.ExpectedStream == "" {
+		_, err = js.PublishMsg(ctx, message)
+	} else {
+		_, err = js.PublishMsg(ctx, message, jetstream.WithExpectStream(exp.cfg.ExpectedStream))
+	}
+	if err != nil {
 		return fmt.Errorf("publish %s: %w", signal, err)
 	}
 

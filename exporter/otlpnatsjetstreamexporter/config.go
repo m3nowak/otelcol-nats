@@ -2,6 +2,7 @@ package otlpnatsjetstreamexporter
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/m3nowak/otelcol-nats/internal/natsjetstream"
 	"go.opentelemetry.io/collector/component"
@@ -20,6 +21,7 @@ type Config struct {
 	QueueConfig                configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	RetryConfig                configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 	SubjectPrefix              string                                                   `mapstructure:"subject_prefix"`
+	ExpectedStream             string                                                   `mapstructure:"expected_stream"`
 	Headers                    map[string]string                                        `mapstructure:"headers"`
 
 	_ struct{}
@@ -38,11 +40,12 @@ func createDefaultConfig() component.Config {
 			InboxPrefix: natsjetstream.DefaultInboxPrefix,
 			Compression: configcompression.TypeGzip,
 		},
-		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
-		QueueConfig:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-		RetryConfig:   configretry.NewDefaultBackOffConfig(),
-		SubjectPrefix: natsjetstream.DefaultSubjectPrefix,
-		Headers:       map[string]string{},
+		TimeoutConfig:  exporterhelper.NewDefaultTimeoutConfig(),
+		QueueConfig:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		RetryConfig:    configretry.NewDefaultBackOffConfig(),
+		SubjectPrefix:  natsjetstream.DefaultSubjectPrefix,
+		ExpectedStream: "",
+		Headers:        map[string]string{},
 	}
 }
 
@@ -59,6 +62,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		QueueConfig       configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 		RetryConfig       configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 		SubjectPrefix     string                                                   `mapstructure:"subject_prefix"`
+		ExpectedStream    string                                                   `mapstructure:"expected_stream"`
 		Headers           map[string]string                                        `mapstructure:"headers"`
 	}
 
@@ -74,6 +78,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		QueueConfig:       cfg.QueueConfig,
 		RetryConfig:       cfg.RetryConfig,
 		SubjectPrefix:     cfg.SubjectPrefix,
+		ExpectedStream:    cfg.ExpectedStream,
 		Headers:           cfg.Headers,
 	}
 
@@ -100,6 +105,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	cfg.QueueConfig = raw.QueueConfig
 	cfg.RetryConfig = raw.RetryConfig
 	cfg.SubjectPrefix = raw.SubjectPrefix
+	cfg.ExpectedStream = raw.ExpectedStream
 	cfg.Headers = raw.Headers
 
 	return nil
@@ -109,8 +115,10 @@ func (cfg *Config) Validate() error {
 	if err := cfg.ClientConfig.Validate(); err != nil {
 		return err
 	}
+	cfg.SubjectPrefix = strings.TrimRight(strings.TrimSpace(cfg.SubjectPrefix), ".")
 	if cfg.SubjectPrefix == "" {
 		return fmt.Errorf(`requires a non-empty "subject_prefix"`)
 	}
+	cfg.ExpectedStream = strings.TrimSpace(cfg.ExpectedStream)
 	return nil
 }

@@ -9,9 +9,10 @@ import (
 func TestConfigUnmarshalAcceptsComponentFields(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	conf := confmap.NewFromStringMap(map[string]any{
-		"endpoint":       "nats://127.0.0.1:4222",
-		"subject_prefix": "demo",
-		"compression":    "zstd",
+		"endpoint":        "nats://127.0.0.1:4222",
+		"subject_prefix":  "demo",
+		"expected_stream": "OTLP",
+		"compression":     "zstd",
 		"headers": map[string]any{
 			"x-test": "value",
 		},
@@ -26,6 +27,9 @@ func TestConfigUnmarshalAcceptsComponentFields(t *testing.T) {
 	}
 	if cfg.SubjectPrefix != "demo" {
 		t.Fatalf("unexpected subject prefix: %q", cfg.SubjectPrefix)
+	}
+	if cfg.ExpectedStream != "OTLP" {
+		t.Fatalf("unexpected expected stream: %q", cfg.ExpectedStream)
 	}
 	if cfg.Compression != "zstd" {
 		t.Fatalf("unexpected compression: %q", cfg.Compression)
@@ -42,5 +46,37 @@ func TestCreateDefaultConfigUsesGzipCompression(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	if cfg.Compression != "gzip" {
 		t.Fatalf("unexpected default compression: %q", cfg.Compression)
+	}
+	if cfg.ExpectedStream != "" {
+		t.Fatalf("unexpected default expected stream: %q", cfg.ExpectedStream)
+	}
+}
+
+func TestConfigValidateNormalizesSubjectPrefixAndExpectedStream(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.SubjectPrefix = " demo... "
+	cfg.ExpectedStream = " OTLP "
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("validate config: %v", err)
+	}
+	if cfg.SubjectPrefix != "demo" {
+		t.Fatalf("unexpected normalized subject prefix: %q", cfg.SubjectPrefix)
+	}
+	if cfg.ExpectedStream != "OTLP" {
+		t.Fatalf("unexpected normalized expected stream: %q", cfg.ExpectedStream)
+	}
+}
+
+func TestConfigValidateRejectsBlankSubjectPrefix(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.SubjectPrefix = " . "
+
+	err := cfg.Validate()
+	if err == nil {
+		t.Fatal("expected validation error for blank subject prefix")
+	}
+	if err.Error() != `requires a non-empty "subject_prefix"` {
+		t.Fatalf("unexpected validation error: %v", err)
 	}
 }
