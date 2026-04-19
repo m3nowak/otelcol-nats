@@ -51,3 +51,32 @@ func TestCreateDefaultConfigUsesGzipCompression(t *testing.T) {
 		t.Fatalf("unexpected default expected stream: %q", cfg.ExpectedStream)
 	}
 }
+
+func TestConfigValidateNormalizesSubjectPrefixAndExpectedStream(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.SubjectPrefix = " demo. "
+	cfg.ExpectedStream = " OTLP "
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("validate config: %v", err)
+	}
+	if cfg.SubjectPrefix != "demo" {
+		t.Fatalf("unexpected normalized subject prefix: %q", cfg.SubjectPrefix)
+	}
+	if cfg.ExpectedStream != "OTLP" {
+		t.Fatalf("unexpected normalized expected stream: %q", cfg.ExpectedStream)
+	}
+}
+
+func TestConfigValidateRejectsBlankSubjectPrefix(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.SubjectPrefix = " . "
+
+	err := cfg.Validate()
+	if err == nil {
+		t.Fatal("expected validation error for blank subject prefix")
+	}
+	if err.Error() != `requires a non-empty "subject_prefix"` {
+		t.Fatalf("unexpected validation error: %v", err)
+	}
+}

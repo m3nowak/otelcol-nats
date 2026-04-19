@@ -115,6 +115,7 @@ func (cfg *Config) Validate() error {
 	if err := cfg.ClientConfig.Validate(); err != nil {
 		return err
 	}
+	cfg.SubjectPrefix = strings.TrimSuffix(strings.TrimSpace(cfg.SubjectPrefix), ".")
 	if cfg.SubjectPrefix == "" {
 		return fmt.Errorf(`requires a non-empty "subject_prefix"`)
 	}
