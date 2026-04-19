@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -53,6 +54,7 @@ func TestExporterPublishesTracePayloadToJetStream(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoints = []string{natsjetstream.DefaultEndpoint}
 	cfg.SubjectPrefix = prefix
+	cfg.ExpectedStream = streamName
 	cfg.Compression = configcompression.TypeZstd
 
 	exp := newExporter(cfg, exporter.Settings{
@@ -107,6 +109,115 @@ func TestExporterPublishesTracePayloadToJetStream(t *testing.T) {
 	}
 	if gotSpans.At(0).Name() != "integration-span" {
 		t.Fatalf("unexpected span name: %s", gotSpans.At(0).Name())
+	}
+}
+
+func TestExporterReturnsErrorWhenNoStreamMatchesSubject(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	clientCfg := natsjetstream.NewDefaultClientConfig()
+	clientCfg.Endpoints = []string{natsjetstream.DefaultEndpoint}
+
+	conn, _, err := natsjetstream.Connect(ctx, clientCfg)
+	if err != nil {
+		if errors.Is(err, nats.ErrNoServers) {
+			t.Skip("local NATS server is not available")
+		}
+		t.Fatalf("connect to local NATS: %v", err)
+	}
+	defer conn.Close()
+
+	prefix := fmt.Sprintf("itest%d", time.Now().UnixNano())
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{natsjetstream.DefaultEndpoint}
+	cfg.SubjectPrefix = prefix
+
+	exp := newExporter(cfg, exporter.Settings{
+		ID: component.MustNewID("otlp_nats_jetstream"),
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	})
+
+	if err := exp.start(ctx, nil); err != nil {
+		t.Fatalf("start exporter: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exp.shutdown(context.Background())
+	})
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scopeSpans.Spans().AppendEmpty().SetName("integration-span")
+
+	err = exp.pushTraces(ctx, traces)
+	if !errors.Is(err, jetstream.ErrNoStreamResponse) {
+		t.Fatalf("expected no stream response error, got %v", err)
+	}
+}
+
+func TestExporterReturnsErrorWhenExpectedStreamDoesNotMatch(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	clientCfg := natsjetstream.NewDefaultClientConfig()
+	clientCfg.Endpoints = []string{natsjetstream.DefaultEndpoint}
+
+	conn, js, err := natsjetstream.Connect(ctx, clientCfg)
+	if err != nil {
+		if errors.Is(err, nats.ErrNoServers) {
+			t.Skip("local NATS server is not available")
+		}
+		t.Fatalf("connect to local NATS: %v", err)
+	}
+	defer conn.Close()
+
+	prefix := fmt.Sprintf("itest%d", time.Now().UnixNano())
+	streamName := fmt.Sprintf("ITEST_%d", time.Now().UnixNano())
+	traceSubject := natsjetstream.Subject(prefix, natsjetstream.SignalTraces)
+
+	_, err = js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+		Name:     streamName,
+		Subjects: []string{traceSubject},
+		Storage:  jetstream.MemoryStorage,
+	})
+	if err != nil {
+		t.Fatalf("create stream: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = js.DeleteStream(context.Background(), streamName)
+	})
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{natsjetstream.DefaultEndpoint}
+	cfg.SubjectPrefix = prefix
+	cfg.ExpectedStream = streamName + "_OTHER"
+
+	exp := newExporter(cfg, exporter.Settings{
+		ID: component.MustNewID("otlp_nats_jetstream"),
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	})
+
+	if err := exp.start(ctx, nil); err != nil {
+		t.Fatalf("start exporter: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exp.shutdown(context.Background())
+	})
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scopeSpans.Spans().AppendEmpty().SetName("integration-span")
+
+	err = exp.pushTraces(ctx, traces)
+	if err == nil || !strings.Contains(err.Error(), "stream does not match") {
+		t.Fatalf("expected stream mismatch error, got %v", err)
 	}
 }
 
