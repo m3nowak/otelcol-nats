@@ -40,12 +40,12 @@ func createDefaultConfig() component.Config {
 			InboxPrefix: natsjetstream.DefaultInboxPrefix,
 			Compression: configcompression.TypeGzip,
 		},
-		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
-		QueueConfig:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-		RetryConfig:   configretry.NewDefaultBackOffConfig(),
-		SubjectPrefix: natsjetstream.DefaultSubjectPrefix,
+		TimeoutConfig:  exporterhelper.NewDefaultTimeoutConfig(),
+		QueueConfig:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		RetryConfig:    configretry.NewDefaultBackOffConfig(),
+		SubjectPrefix:  natsjetstream.DefaultSubjectPrefix,
 		ExpectedStream: "",
-		Headers:       map[string]string{},
+		Headers:        map[string]string{},
 	}
 }
 
